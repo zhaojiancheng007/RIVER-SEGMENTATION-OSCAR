@@ -1,0 +1,16 @@
+{
+  "default": {
+    "area_pixels": 300000,
+    "area_ratio": 0.35
+  },
+  "videos": {
+    "千葉県_一宮川_早野": {
+      "area_pixels": 300000,
+      "area_ratio": 0.35
+    },
+    "福岡県_草場川_+新橋": {
+      "area_pixels": 300000,
+      "area_ratio": 0.35
+    }
+  }
+}

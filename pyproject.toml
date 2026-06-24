@@ -1,0 +1,10 @@
+[project]
+name = "river-seg-server-deploy"
+version = "0.1.0"
+description = "Server-local river segmentation runner with threshold alarms."
+requires-python = ">=3.10"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["river_seg_server*"]
+
