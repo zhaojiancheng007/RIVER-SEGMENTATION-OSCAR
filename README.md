@@ -2,43 +2,8 @@
 
 ## 1. Configure Environment
 
-The default environment assumes the code is deployed under:
+conda env create -f river_seg_server_deploy/environment.yml
 
-```bash
-<repo-root>
-```
-
-Required paths:
-
-```bash
-PYTHON_BIN=<python-in-sam3-env>
-PROJECT_ROOT=<repo-root>
-BASE_CHECKPOINT=<path-to-sam3-base-checkpoint>
-CHECKPOINT=<path-to-finetuned-river-checkpoint>
-```
-
-Checkpoint files are expected at:
-
-```text
-<repo-root>/river_seg_server_deploy/river_seg_server/checkpoint/sam3.pt
-<repo-root>/river_seg_server_deploy/river_seg_server/checkpoint/checkpoint_best.pt
-```
-
-Specify checkpoint paths in the run command:
-
-```bash
-PROJECT_ROOT=<repo-root> \
-PYTHON_BIN=<python-in-sam3-env> \
-BASE_CHECKPOINT=<repo-root>/river_seg_server_deploy/river_seg_server/checkpoint/sam3.pt \
-CHECKPOINT=<repo-root>/river_seg_server_deploy/river_seg_server/checkpoint/checkpoint_best.pt \
-bash river_seg_server_deploy/run_server_seg.sh
-```
-
-The script automatically sets:
-
-```bash
-PYTHONPATH=${SCRIPT_DIR}:${PROJECT_ROOT}:${PROJECT_ROOT}/sam3
-```
 
 ## 2. Run
 
