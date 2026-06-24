@@ -2,10 +2,21 @@
 
 ## 1. Configure Environment
 
+Conda:
+
+```bash
 conda env create -f river_seg_server_deploy/environment.yml
+```
+
+Docker:
+
+```bash
+cd river_seg_server_deploy
+docker build -t river-seg-sam3:latest .
+```
 
 
-## 2. Run
+## 2. Run With Conda
 
 One-shot run:
 
@@ -109,3 +120,53 @@ Threshold JSON example:
 ```
 
 If either `area_pixels` or `area_ratio` is exceeded, the video is marked as an alarm.
+
+
+## 4. Run With Docker
+
+One-shot run:
+
+```bash
+cd river_seg_server_deploy
+
+docker run --rm --gpus all --shm-size 16g \
+  -v /path/to/frames:/data/frames:ro \
+  -v /path/to/outputs:/data/outputs \
+  -v /path/to/checkpoints:/checkpoints:ro \
+  -e INPUT_ROOT=/data/frames \
+  -e OUTPUT_ROOT=/data/outputs \
+  -e THRESHOLD_JSON=/workspace/river_seg_server_deploy/config/thresholds.example.json \
+  -e BASE_CHECKPOINT=/checkpoints/sam3.pt \
+  -e CHECKPOINT=/checkpoints/checkpoint_best.pt \
+  -e GPU_IDS="0" \
+  -e FRAME_COUNT=10 \
+  -e SAVE_MASK=1 \
+  -e SAVE_OVERLAY=1 \
+  river-seg-sam3:latest
+```
+
+Run every 5 minutes:
+
+```bash
+cd river_seg_server_deploy
+
+docker run --rm --gpus all --shm-size 16g \
+  -v /path/to/frames:/data/frames:ro \
+  -v /path/to/outputs:/data/outputs \
+  -v /path/to/checkpoints:/checkpoints:ro \
+  -e INPUT_ROOT=/data/frames \
+  -e OUTPUT_ROOT=/data/outputs \
+  -e THRESHOLD_JSON=/workspace/river_seg_server_deploy/config/thresholds.example.json \
+  -e BASE_CHECKPOINT=/checkpoints/sam3.pt \
+  -e CHECKPOINT=/checkpoints/checkpoint_best.pt \
+  -e GPU_IDS="0 1 2 3" \
+  -e FRAME_COUNT=10 \
+  -e SAVE_MASK=1 \
+  -e SAVE_OVERLAY=1 \
+  -e LOOP=1 \
+  -e INTERVAL_SECONDS=300 \
+  river-seg-sam3:latest
+```
+
+The checkpoint files are mounted at runtime and are not included in the Docker
+image.

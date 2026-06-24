@@ -1,0 +1,24 @@
+services:
+  river-seg:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: river-seg-sam3:latest
+    gpus: all
+    shm_size: "16gb"
+    environment:
+      INPUT_ROOT: /data/frames
+      OUTPUT_ROOT: /data/outputs
+      THRESHOLD_JSON: /workspace/river_seg_server_deploy/config/thresholds.example.json
+      BASE_CHECKPOINT: /checkpoints/sam3.pt
+      CHECKPOINT: /checkpoints/checkpoint_best.pt
+      GPU_IDS: "0"
+      FRAME_COUNT: "10"
+      SAVE_MASK: "1"
+      SAVE_OVERLAY: "1"
+      LOOP: "1"
+      INTERVAL_SECONDS: "300"
+    volumes:
+      - /path/to/frames:/data/frames:ro
+      - /path/to/outputs:/data/outputs
+      - /path/to/checkpoints:/checkpoints:ro

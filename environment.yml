@@ -35,6 +35,7 @@ dependencies:
   - xz=5.6.4
   - zlib=1.3.1
   - pip:
+      - --extra-index-url https://download.pytorch.org/whl/cu126
       - absl-py==2.3.1
       - antlr4-python3-runtime==4.9.3
       - anyio==4.12.0
@@ -186,7 +187,7 @@ dependencies:
       - rpds-py==0.30.0
       - ruff-api==0.1.0
       - safetensors==0.7.0
-      - sam3==0.1.0
+      - git+https://github.com/facebookresearch/sam3.git@757bbb0206a0b68bee81b17d7eb4877177025b2f
       - scikit-image==0.25.2
       - scikit-learn==1.7.2
       - scipy==1.16.3

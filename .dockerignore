@@ -1,0 +1,7 @@
+.git
+__pycache__/
+*.pyc
+.pytest_cache/
+outputs/
+*.log
+river_seg_server/checkpoint/*.pt
