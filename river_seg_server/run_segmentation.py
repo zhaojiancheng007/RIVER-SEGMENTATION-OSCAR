@@ -18,8 +18,9 @@ IMAGE_EXTS = {".jpg", ".jpeg", ".png"}
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run one server-local river segmentation cycle.")
-    parser.add_argument("--input-root", required=True)
     parser.add_argument("--output-root", required=True)
+    parser.add_argument("--runtime-root", required=True)
+    parser.add_argument("--manifest", required=True)
     parser.add_argument("--threshold-json", required=True)
     parser.add_argument("--base-checkpoint", required=True)
     parser.add_argument("--checkpoint", required=True)
@@ -61,11 +62,11 @@ def image_frames(video_dir: Path) -> list[Path]:
     return sorted(frames, key=lambda p: (p.stem, p.name))
 
 
-def video_dirs(input_root: Path, limit: int, worker_index: int, num_workers: int) -> list[Path]:
-    videos = [p for p in sorted(input_root.iterdir()) if p.is_dir() and image_frames(p)]
+def load_manifest(path: Path, limit: int, worker_index: int, num_workers: int) -> list[dict[str, Any]]:
+    items = json.loads(path.read_text(encoding="utf-8"))["items"]
     if limit > 0:
-        videos = videos[:limit]
-    return videos[worker_index::num_workers]
+        items = items[:limit]
+    return items[worker_index::num_workers]
 
 
 def build_numeric_window(video_dir: Path, windows_root: Path, frame_count: int) -> tuple[Path, list[dict[str, Any]]]:
@@ -90,11 +91,12 @@ def load_thresholds(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def video_threshold(thresholds: dict[str, Any], video_name: str) -> dict[str, float]:
+def video_threshold(thresholds: dict[str, Any], video_name: str) -> dict[str, Any]:
     item = thresholds.get("videos", {}).get(video_name, thresholds.get("default", {}))
     return {
         "area_pixels": float(item["area_pixels"]) if "area_pixels" in item else None,
         "area_ratio": float(item["area_ratio"]) if "area_ratio" in item else None,
+        "flood_levels": item.get("flood_levels", []),
     }
 
 
@@ -154,7 +156,7 @@ def forward_video(predictor: Any, window_dir: Path, prompt_frame: int, text_prom
     return frame_path, mask, inference_seconds
 
 
-def evaluate_mask(mask: np.ndarray, threshold: dict[str, float]) -> dict[str, Any]:
+def evaluate_mask(mask: np.ndarray, threshold: dict[str, Any]) -> dict[str, Any]:
     area_pixels = int((mask > 0).sum())
     area_ratio = area_pixels / float(mask.shape[0] * mask.shape[1])
     checks = []
@@ -176,13 +178,24 @@ def evaluate_mask(mask: np.ndarray, threshold: dict[str, float]) -> dict[str, An
                 "alarm": area_ratio > threshold["area_ratio"],
             }
         )
-    return {"area_pixels": area_pixels, "area_ratio": area_ratio, "threshold_checks": checks, "alarm": any(x["alarm"] for x in checks)}
+    flood_level = 0
+    for item in threshold["flood_levels"]:
+        if area_ratio >= float(item["area_ratio"]):
+            flood_level = int(item["level"])
+    if not threshold["flood_levels"] and any(x["alarm"] for x in checks):
+        flood_level = 3
+    return {
+        "area_pixels": area_pixels,
+        "area_ratio": area_ratio,
+        "threshold_checks": checks,
+        "alarm": any(x["alarm"] for x in checks),
+        "flood_level": flood_level,
+    }
 
 
 def save_result(
     output_root: Path,
-    video_name: str,
-    source_frame_name: str,
+    item: dict[str, Any],
     mask: np.ndarray,
     frame_path: Path,
     metrics: dict[str, Any],
@@ -190,22 +203,23 @@ def save_result(
     save_mask: bool,
     save_overlay: bool,
 ) -> dict[str, Any]:
-    result_dir = output_root / "results" / video_name
+    result_dir = output_root / item["river_id"] / item["site_id"] / item["yyyymm"]
     result_dir.mkdir(parents=True, exist_ok=True)
-    mask_path = result_dir / "mask.png" if save_mask else None
-    overlay_path = result_dir / "overlay.png" if save_overlay else None
+    mask_path = result_dir / f"{item['stem']}_mask.png" if save_mask else None
+    overlay_path = result_dir / f"{item['stem']}_overlay.png" if save_overlay else None
     if save_mask or save_overlay:
         save_mask_and_overlay(mask, frame_path, mask_path, overlay_path)
 
     record = {
-        "video": video_name,
-        "frame": source_frame_name,
+        "frame": item["name"],
+        "river_id": item["river_id"],
+        "site_id": item["site_id"],
         "inference_seconds": inference_seconds,
         "mask_path": str(mask_path) if mask_path else "",
         "overlay_path": str(overlay_path) if overlay_path else "",
         **metrics,
     }
-    (result_dir / "summary.json").write_text(json.dumps(record, ensure_ascii=False, indent=2), encoding="utf-8")
+    (result_dir / f"{item['stem']}.txt").write_text(json.dumps(record, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return record
 
 
@@ -216,14 +230,15 @@ def append_jsonl(path: Path, item: dict[str, Any]) -> None:
 
 def main() -> None:
     args = parse_args()
-    input_root = Path(args.input_root)
     output_root = Path(args.output_root)
-    windows_root = output_root / "windows"
+    runtime_root = Path(args.runtime_root)
+    windows_root = runtime_root / "windows"
     thresholds = load_thresholds(Path(args.threshold_json))
 
     output_root.mkdir(parents=True, exist_ok=True)
+    runtime_root.mkdir(parents=True, exist_ok=True)
     windows_root.mkdir(parents=True, exist_ok=True)
-    for path in (output_root / "results.jsonl", output_root / "alarms.jsonl"):
+    for path in (runtime_root / "results.jsonl", runtime_root / "alarms.jsonl"):
         if path.exists():
             path.unlink()
         path.touch()
@@ -232,15 +247,14 @@ def main() -> None:
     records = []
     start = time.perf_counter()
     try:
-        for video_dir in video_dirs(input_root, args.limit, args.worker_index, args.num_workers):
-            window_dir, mapping = build_numeric_window(video_dir, windows_root, args.frame_count)
+        for item in load_manifest(Path(args.manifest), args.limit, args.worker_index, args.num_workers):
+            video_dir = Path(item["video_dir"])
+            window_dir, _mapping = build_numeric_window(video_dir, windows_root, args.frame_count)
             frame_path, mask, inference_seconds = forward_video(predictor, window_dir, args.prompt_frame, args.text_prompt)
-            latest_source = mapping[-1]["source_name"]
             metrics = evaluate_mask(mask, video_threshold(thresholds, video_dir.name))
             record = save_result(
                 output_root,
-                video_dir.name,
-                latest_source,
+                item,
                 mask,
                 frame_path,
                 metrics,
@@ -248,9 +262,9 @@ def main() -> None:
                 args.save_mask,
                 args.save_overlay,
             )
-            append_jsonl(output_root / "results.jsonl", record)
+            append_jsonl(runtime_root / "results.jsonl", record)
             if record["alarm"]:
-                append_jsonl(output_root / "alarms.jsonl", record)
+                append_jsonl(runtime_root / "alarms.jsonl", record)
             print(json.dumps(record, ensure_ascii=False), flush=True)
             records.append(record)
     finally:
@@ -258,8 +272,8 @@ def main() -> None:
             predictor.shutdown()
 
     summary = {
-        "input_root": str(input_root),
         "output_root": str(output_root),
+        "runtime_root": str(runtime_root),
         "load": load_summary,
         "worker_index": args.worker_index,
         "num_workers": args.num_workers,
@@ -267,7 +281,7 @@ def main() -> None:
         "alarms": sum(1 for x in records if x["alarm"]),
         "total_seconds": time.perf_counter() - start,
     }
-    (output_root / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
+    (runtime_root / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps(summary, ensure_ascii=False, indent=2), flush=True)
 
 

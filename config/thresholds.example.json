@@ -1,16 +1,40 @@
 {
   "default": {
     "area_pixels": 300000,
-    "area_ratio": 0.35
+    "area_ratio": 0.35,
+    "flood_levels": [
+      {
+        "level": 1,
+        "area_ratio": 0.25
+      },
+      {
+        "level": 2,
+        "area_ratio": 0.35
+      },
+      {
+        "level": 3,
+        "area_ratio": 0.5
+      }
+    ]
   },
   "videos": {
-    "千葉県_一宮川_早野": {
+    "89094001-111009042": {
       "area_pixels": 300000,
-      "area_ratio": 0.35
-    },
-    "福岡県_草場川_+新橋": {
-      "area_pixels": 300000,
-      "area_ratio": 0.35
+      "area_ratio": 0.35,
+      "flood_levels": [
+        {
+          "level": 1,
+          "area_ratio": 0.25
+        },
+        {
+          "level": 2,
+          "area_ratio": 0.35
+        },
+        {
+          "level": 3,
+          "area_ratio": 0.5
+        }
+      ]
     }
   }
 }

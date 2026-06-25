@@ -7,8 +7,9 @@ services:
     gpus: all
     shm_size: "16gb"
     environment:
-      INPUT_ROOT: /data/frames
-      OUTPUT_ROOT: /data/outputs
+      ARCHIVE_ROOT: /mount/lcamai/latest-all
+      OUTPUT_ROOT: /mount/lcamai/result-all
+      RUNTIME_ROOT: /mount/lcamai/river-seg-runtime
       THRESHOLD_JSON: /workspace/river_seg_server_deploy/config/thresholds.example.json
       BASE_CHECKPOINT: /checkpoints/sam3.pt
       CHECKPOINT: /checkpoints/checkpoint_best.pt
@@ -19,6 +20,5 @@ services:
       LOOP: "1"
       INTERVAL_SECONDS: "300"
     volumes:
-      - /path/to/frames:/data/frames:ro
-      - /path/to/outputs:/data/outputs
+      - /mount/lcamai:/mount/lcamai
       - /path/to/checkpoints:/checkpoints:ro

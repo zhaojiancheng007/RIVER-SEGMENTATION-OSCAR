@@ -6,8 +6,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PYTHON_BIN="${PYTHON_BIN:-python}"
 PROJECT_ROOT="${PROJECT_ROOT:-$(cd "${SCRIPT_DIR}/.." && pwd)}"
 
-INPUT_ROOT="${INPUT_ROOT:-${PROJECT_ROOT}/frames/original}"
-OUTPUT_ROOT="${OUTPUT_ROOT:-${PROJECT_ROOT}/outputs/server_deploy_run}"
+ARCHIVE_ROOT="${ARCHIVE_ROOT:-/mount/lcamai/latest-all}"
+OUTPUT_ROOT="${OUTPUT_ROOT:-/mount/lcamai/result-all}"
+RUNTIME_ROOT="${RUNTIME_ROOT:-/mount/lcamai/river-seg-runtime}"
+FRAME_CACHE_ROOT="${FRAME_CACHE_ROOT:-${RUNTIME_ROOT}/frames}"
+MANIFEST="${MANIFEST:-${RUNTIME_ROOT}/manifest.json}"
 THRESHOLD_JSON="${THRESHOLD_JSON:-${SCRIPT_DIR}/config/thresholds.example.json}"
 
 TEXT_PROMPT="${TEXT_PROMPT:-water}"
@@ -33,12 +36,13 @@ export PYTHONPATH="${SCRIPT_DIR}:${PROJECT_ROOT}:${PROJECT_ROOT}/sam3:${PYTHONPA
 run_worker() {
   local worker_index="$1"
   local gpu_id="$2"
-  local worker_root="${OUTPUT_ROOT}/workers/worker_${worker_index}_gpu_${gpu_id}"
+  local worker_root="${RUNTIME_ROOT}/workers/worker_${worker_index}_gpu_${gpu_id}"
 
   local args=(
     -m river_seg_server.run_segmentation
-    --input-root "${INPUT_ROOT}"
-    --output-root "${worker_root}"
+    --output-root "${OUTPUT_ROOT}"
+    --runtime-root "${worker_root}"
+    --manifest "${MANIFEST}"
     --threshold-json "${THRESHOLD_JSON}"
     --base-checkpoint "${BASE_CHECKPOINT}"
     --checkpoint "${CHECKPOINT}"
@@ -61,16 +65,16 @@ run_worker() {
 }
 
 merge_outputs() {
-  : > "${OUTPUT_ROOT}/results.jsonl"
-  : > "${OUTPUT_ROOT}/alarms.jsonl"
+  : > "${RUNTIME_ROOT}/results.jsonl"
+  : > "${RUNTIME_ROOT}/alarms.jsonl"
 
   local total_videos=0
   local total_alarms=0
   for i in "${!GPUS[@]}"; do
-    local worker_root="${OUTPUT_ROOT}/workers/worker_${i}_gpu_${GPUS[$i]}"
-    cat "${worker_root}/results.jsonl" >> "${OUTPUT_ROOT}/results.jsonl"
+    local worker_root="${RUNTIME_ROOT}/workers/worker_${i}_gpu_${GPUS[$i]}"
+    cat "${worker_root}/results.jsonl" >> "${RUNTIME_ROOT}/results.jsonl"
     if [[ -f "${worker_root}/alarms.jsonl" ]]; then
-      cat "${worker_root}/alarms.jsonl" >> "${OUTPUT_ROOT}/alarms.jsonl"
+      cat "${worker_root}/alarms.jsonl" >> "${RUNTIME_ROOT}/alarms.jsonl"
     fi
     local videos
     local alarms
@@ -80,16 +84,23 @@ merge_outputs() {
     total_alarms=$((total_alarms + alarms))
   done
 
-  "${PYTHON_BIN}" -c "import json, time; json.dump({'input_root':'${INPUT_ROOT}','output_root':'${OUTPUT_ROOT}','gpus':${NUM_WORKERS},'videos':${total_videos},'alarms':${total_alarms},'merged_at':time.strftime('%Y%m%d-%H%M%S')}, open('${OUTPUT_ROOT}/summary.json','w'), ensure_ascii=False, indent=2)"
+  "${PYTHON_BIN}" -c "import json, time; json.dump({'archive_root':'${ARCHIVE_ROOT}','frame_cache_root':'${FRAME_CACHE_ROOT}','output_root':'${OUTPUT_ROOT}','gpus':${NUM_WORKERS},'videos':${total_videos},'alarms':${total_alarms},'merged_at':time.strftime('%Y%m%d-%H%M%S')}, open('${RUNTIME_ROOT}/summary.json','w'), ensure_ascii=False, indent=2)"
 }
 
 run_once() {
-  rm -rf "${OUTPUT_ROOT}/workers"
-  mkdir -p "${OUTPUT_ROOT}/workers"
+  mkdir -p "${RUNTIME_ROOT}"
+  "${PYTHON_BIN}" -m river_seg_server.prepare_lcamai_cycle \
+    --archive-root "${ARCHIVE_ROOT}" \
+    --frame-cache-root "${FRAME_CACHE_ROOT}" \
+    --manifest "${MANIFEST}" \
+    --frame-count "${FRAME_COUNT}"
+
+  rm -rf "${RUNTIME_ROOT}/workers"
+  mkdir -p "${RUNTIME_ROOT}/workers"
 
   local pids=()
   for i in "${!GPUS[@]}"; do
-    run_worker "${i}" "${GPUS[$i]}" > "${OUTPUT_ROOT}/workers/worker_${i}_gpu_${GPUS[$i]}.log" 2>&1 &
+    run_worker "${i}" "${GPUS[$i]}" > "${RUNTIME_ROOT}/workers/worker_${i}_gpu_${GPUS[$i]}.log" 2>&1 &
     pids+=("$!")
   done
 
@@ -100,7 +111,7 @@ run_once() {
     fi
   done
   if [[ "${status}" != "0" ]]; then
-    echo "worker failed; see ${OUTPUT_ROOT}/workers/*.log" >&2
+    echo "worker failed; see ${RUNTIME_ROOT}/workers/*.log" >&2
     exit 1
   fi
 
