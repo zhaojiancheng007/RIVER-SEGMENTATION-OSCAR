@@ -14,7 +14,37 @@ Docker:
 docker build -t river-seg-sam3:latest .
 ```
 
-## 2. Data Layout
+## 2. Download Checkpoints
+
+Expected checkpoint paths:
+
+```text
+river_seg_server/checkpoint/sam3.pt
+river_seg_server/checkpoint/checkpoint_best.pt
+```
+
+Download with `gdown`:
+
+```bash
+python -m pip install gdown
+mkdir -p river_seg_server/checkpoint
+
+gdown "https://drive.google.com/uc?export=download&id=1hZOI-mZPxFnhmie7IkjssZf3DfGkKyQy" -O river_seg_server/checkpoint/sam3.pt
+gdown "https://drive.google.com/uc?export=download&id=1LwqPLxTvoWKhuEWoM5ApSPzmDDmLRmkU" -O river_seg_server/checkpoint/checkpoint_best.pt
+```
+
+Download with `curl`:
+
+```bash
+mkdir -p river_seg_server/checkpoint
+
+curl -L "https://drive.google.com/uc?export=download&id=1hZOI-mZPxFnhmie7IkjssZf3DfGkKyQy" -o river_seg_server/checkpoint/sam3.pt
+curl -L "https://drive.google.com/uc?export=download&id=1LwqPLxTvoWKhuEWoM5ApSPzmDDmLRmkU" -o river_seg_server/checkpoint/checkpoint_best.pt
+```
+
+The links are mapped in the order provided. If the files were provided in the opposite order, swap the two output names.
+
+## 3. Data Layout
 
 Input archives are read from:
 
@@ -36,7 +66,7 @@ Results are written to:
 
 The `.txt` file is JSON and includes `flood_level`.
 
-## 3. Run With Conda
+## 4. Run With Conda
 
 ```bash
 BASE_CHECKPOINT=/path/to/sam3.pt \
@@ -54,7 +84,7 @@ INTERVAL_SECONDS=300 \
 bash run_server_seg.sh
 ```
 
-## 4. Run With Docker
+## 5. Run With Docker
 
 ```bash
 docker run -d --name river-seg \
@@ -77,7 +107,7 @@ docker run -d --name river-seg \
   river-seg-sam3:latest
 ```
 
-## 5. Parameters
+## 6. Parameters
 
 | Parameter | Default | Description |
 | --- | --- | --- |
