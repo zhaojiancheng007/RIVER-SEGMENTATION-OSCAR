@@ -1,54 +1,75 @@
-Checkpoint download notes
-=========================
+Checkpoint download instructions
+================================
 
-Google Drive folder:
-https://drive.google.com/drive/folders/1x2vSvqVHXxtkRPJnDrE6ChkbkV5Shazv?usp=sharing
+Expected checkpoint paths
+-------------------------
 
-Folder ID:
-1x2vSvqVHXxtkRPJnDrE6ChkbkV5Shazv
-
-Current access status
----------------------
-
-The folder currently requires Google sign-in from a non-browser/anonymous
-environment. Because of that, the two checkpoint file IDs cannot be parsed from
-this machine yet.
-
-The owner should set the folder or the two checkpoint files to:
-
-Anyone with the link can view
-
-After that, the commands below can be used on the deployment machine.
+river_seg_server/checkpoint/sam3.pt
+river_seg_server/checkpoint/checkpoint_best.pt
 
 
-Download both checkpoint files from the folder
-----------------------------------------------
+Parsed Google Drive file IDs
+----------------------------
+
+Checkpoint 1:
+1hZOI-mZPxFnhmie7IkjssZf3DfGkKyQy
+
+Checkpoint 2:
+1LwqPLxTvoWKhuEWoM5ApSPzmDDmLRmkU
+
+
+Canonical download links
+------------------------
+
+Checkpoint 1:
+https://drive.google.com/uc?export=download&id=1hZOI-mZPxFnhmie7IkjssZf3DfGkKyQy
+
+Checkpoint 2:
+https://drive.google.com/uc?export=download&id=1LwqPLxTvoWKhuEWoM5ApSPzmDDmLRmkU
+
+
+Download with gdown
+-------------------
 
 Install gdown:
 
 python -m pip install gdown
 
-Download all files in the folder:
+Create checkpoint directory:
 
 mkdir -p river_seg_server/checkpoint
-gdown --folder "https://drive.google.com/drive/folders/1x2vSvqVHXxtkRPJnDrE6ChkbkV5Shazv?usp=sharing" -O river_seg_server/checkpoint
+
+Download checkpoints:
+
+gdown "https://drive.google.com/uc?export=download&id=1hZOI-mZPxFnhmie7IkjssZf3DfGkKyQy" -O river_seg_server/checkpoint/sam3.pt
+gdown "https://drive.google.com/uc?export=download&id=1LwqPLxTvoWKhuEWoM5ApSPzmDDmLRmkU" -O river_seg_server/checkpoint/checkpoint_best.pt
 
 
-Direct file download format
----------------------------
+Download with curl
+------------------
 
-After the two file IDs are visible, direct download links should use this format:
+mkdir -p river_seg_server/checkpoint
 
-https://drive.google.com/uc?export=download&id=<FILE_ID>
-
-Example commands:
-
-gdown "https://drive.google.com/uc?export=download&id=<SAM3_BASE_CHECKPOINT_FILE_ID>" -O river_seg_server/checkpoint/sam3.pt
-gdown "https://drive.google.com/uc?export=download&id=<RIVER_SEG_CHECKPOINT_FILE_ID>" -O river_seg_server/checkpoint/checkpoint_best.pt
+curl -L "https://drive.google.com/uc?export=download&id=1hZOI-mZPxFnhmie7IkjssZf3DfGkKyQy" -o river_seg_server/checkpoint/sam3.pt
+curl -L "https://drive.google.com/uc?export=download&id=1LwqPLxTvoWKhuEWoM5ApSPzmDDmLRmkU" -o river_seg_server/checkpoint/checkpoint_best.pt
 
 
-Expected checkpoint paths for this repo
----------------------------------------
+Original usercontent links
+--------------------------
 
-river_seg_server/checkpoint/sam3.pt
-river_seg_server/checkpoint/checkpoint_best.pt
+Checkpoint 1:
+https://drive.usercontent.google.com/download?id=1hZOI-mZPxFnhmie7IkjssZf3DfGkKyQy&export=download&authuser=0&confirm=t&uuid=df62cc76-01e5-407c-8d94-b69c76eab76b&at=ABswASal_jWBE5iEj0k36mIQr-oi:1782352367249
+
+Checkpoint 2:
+https://drive.usercontent.google.com/download?id=1LwqPLxTvoWKhuEWoM5ApSPzmDDmLRmkU&export=download&authuser=0&confirm=t&uuid=e7e485f4-1af7-4a48-bb8f-d187da04a8bb&at=ABswASauDiJ2v2Vqg8AGkP-gj-_X:1782352333600
+
+
+Note
+----
+
+The two commands above map the links in the order provided:
+
+1. Checkpoint 1 -> sam3.pt
+2. Checkpoint 2 -> checkpoint_best.pt
+
+If the files were provided in the opposite order, swap the two output names.
