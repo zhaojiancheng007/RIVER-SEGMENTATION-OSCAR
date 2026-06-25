@@ -1,0 +1,54 @@
+Checkpoint download notes
+=========================
+
+Google Drive folder:
+https://drive.google.com/drive/folders/1x2vSvqVHXxtkRPJnDrE6ChkbkV5Shazv?usp=sharing
+
+Folder ID:
+1x2vSvqVHXxtkRPJnDrE6ChkbkV5Shazv
+
+Current access status
+---------------------
+
+The folder currently requires Google sign-in from a non-browser/anonymous
+environment. Because of that, the two checkpoint file IDs cannot be parsed from
+this machine yet.
+
+The owner should set the folder or the two checkpoint files to:
+
+Anyone with the link can view
+
+After that, the commands below can be used on the deployment machine.
+
+
+Download both checkpoint files from the folder
+----------------------------------------------
+
+Install gdown:
+
+python -m pip install gdown
+
+Download all files in the folder:
+
+mkdir -p river_seg_server/checkpoint
+gdown --folder "https://drive.google.com/drive/folders/1x2vSvqVHXxtkRPJnDrE6ChkbkV5Shazv?usp=sharing" -O river_seg_server/checkpoint
+
+
+Direct file download format
+---------------------------
+
+After the two file IDs are visible, direct download links should use this format:
+
+https://drive.google.com/uc?export=download&id=<FILE_ID>
+
+Example commands:
+
+gdown "https://drive.google.com/uc?export=download&id=<SAM3_BASE_CHECKPOINT_FILE_ID>" -O river_seg_server/checkpoint/sam3.pt
+gdown "https://drive.google.com/uc?export=download&id=<RIVER_SEG_CHECKPOINT_FILE_ID>" -O river_seg_server/checkpoint/checkpoint_best.pt
+
+
+Expected checkpoint paths for this repo
+---------------------------------------
+
+river_seg_server/checkpoint/sam3.pt
+river_seg_server/checkpoint/checkpoint_best.pt
