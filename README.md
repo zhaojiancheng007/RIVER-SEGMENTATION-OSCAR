@@ -23,7 +23,27 @@ river_seg_server/checkpoint/sam3.pt
 river_seg_server/checkpoint/checkpoint_best.pt
 ```
 
-Download with `gdown`:
+Current Google Drive file IDs:
+
+```text
+1hZOI-mZPxFnhmie7IkjssZf3DfGkKyQy
+1LwqPLxTvoWKhuEWoM5ApSPzmDDmLRmkU
+```
+
+Local download check result:
+
+```text
+The links currently return a Google sign-in HTML page instead of checkpoint files.
+They are not direct-downloadable from a server environment yet.
+```
+
+Before using the commands below, set both Google Drive files to:
+
+```text
+Anyone with the link can view
+```
+
+Then download with `gdown`:
 
 ```bash
 python -m pip install gdown
@@ -33,13 +53,20 @@ gdown "https://drive.google.com/uc?export=download&id=1hZOI-mZPxFnhmie7IkjssZf3D
 gdown "https://drive.google.com/uc?export=download&id=1LwqPLxTvoWKhuEWoM5ApSPzmDDmLRmkU" -O river_seg_server/checkpoint/checkpoint_best.pt
 ```
 
-Download with `curl`:
+Or download with `curl`:
 
 ```bash
 mkdir -p river_seg_server/checkpoint
 
 curl -L "https://drive.google.com/uc?export=download&id=1hZOI-mZPxFnhmie7IkjssZf3DfGkKyQy" -o river_seg_server/checkpoint/sam3.pt
 curl -L "https://drive.google.com/uc?export=download&id=1LwqPLxTvoWKhuEWoM5ApSPzmDDmLRmkU" -o river_seg_server/checkpoint/checkpoint_best.pt
+```
+
+Verify the downloaded files are not HTML:
+
+```bash
+file river_seg_server/checkpoint/sam3.pt
+file river_seg_server/checkpoint/checkpoint_best.pt
 ```
 
 The links are mapped in the order provided. If the files were provided in the opposite order, swap the two output names.
